@@ -1,34 +1,3 @@
-# import cv2
-# import supervision as sv
-# from ultralytics import YOLO
-# from tracking.tracker import PersonTracker
-# from tracking.track_state import TrackStateManager
-
-# model = YOLO("yolov8s.pt")
-# # model = YOLO("yolov8n.pt")
-
-# video_path = r"C:\Users\Avani N. Goswami\Desktop\Police AI System\police ai system\people.mp4"
-# tracker = PersonTracker()
-# state_manager = TrackStateManager
-
-# cap = cv2.VideoCapture(video_path)
-# ret, frame = cap.read()
-# h,w = frame.shape[:2]
-# cap.release()
-
-# box_annonator = sv.BoxAnnotator(thickness=2)
-
-# for result in model.track(source=video_path, stream=True, classes=[0,24,26,28,39,43,67],imgsz=600):
-#     frame = result.orig_img
-#     detections = sv.Detections.from_ultralytics(result)
-#     frame = box_annonator.annotate(scene=frame,detections = detections)
-#     cv2.imshow("frame", frame)
-#     if cv2.waitKey(1) & 0xFF == 27:
-#         break
-
-# cv2.destroyAllWindows()
-
-
 from pathlib import Path
 import sys
 
@@ -43,6 +12,14 @@ import supervision as sv
 from ultralytics import YOLO
 from tracking.tracker import PersonTracker
 from tracking.track_state import TrackStateManager
+from engine.event_engine import EventEngine
+import requests
+
+def send_event(payload):
+    requests.post(
+        "http://localhost:8000/event/events",
+        json=payload
+    )
 
 model = YOLO("yolov8s.pt")
 # model = YOLO("yolov8n.pt")
@@ -50,6 +27,7 @@ model = YOLO("yolov8s.pt")
 video_path = r"C:\Users\Avani N. Goswami\Desktop\Police AI System\police ai system\people.mp4"
 tracker = PersonTracker()
 state_manager = TrackStateManager()
+engine = EventEngine()
 
 cap = cv2.VideoCapture(video_path)
 
@@ -60,6 +38,11 @@ while True:
 
     tracked_person = tracker.process_frame(frame=frame)
     state = state_manager.update(tracked_people=tracked_person,)
+
+    engine.detect_loiter(state)
+    engine.detect_unattempted(state)
+    engine.detect_crowd_surge(state,frame.shape[1],frame.shape[0])
+
 
     for person in tracked_person:
           pid = person['id']
