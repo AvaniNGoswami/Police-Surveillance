@@ -5,7 +5,7 @@ from intelligence.vector_store import EventVectorStore
 router = APIRouter(prefix='/summary', tags=['Summary'])
 vector_store = EventVectorStore()
 
-@router.get('/')
+@router.get('/summarize')
 def get_summary():
     summarizer = ShiftSummarizer(vector_store)
     return {"summary": summarizer.summary()}

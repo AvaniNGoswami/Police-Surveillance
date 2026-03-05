@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Optional,Dict
 from uuid import uuid4
 from app.models.event import Event
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from app.db.database import engine
 from sqlalchemy import func
@@ -40,13 +40,13 @@ def record_event(data:event_record):
     return {'status':'ok','event':event}
 
 
-@router.get('get_events')
+@router.get('/get_events')
 def get_event():
     with Session(engine) as session:
         event = session.query(Event).all()
     return event
 
-@router.get('hour_summary')
+@router.get('/hour_summary')
 def get_summary():
     result=[]
     hour = func.date_trunc('hour',Event.timestamp).label('hour')
@@ -55,4 +55,23 @@ def get_summary():
         for hour,event_type,count in summary:
             result.append({'hour':hour,'event_type':event_type,'count':count})
     return result
+
+@router.get('/last_hour_summary')
+def last_hour_summary():
+    result = []
+    last_hour = datetime.utcnow()-timedelta(hours=1)
+    last_hour = func.date_trunc('hour',Event.timestamp).label('hour')
+    with Session(engine) as session:
+        summary = session.query(last_hour,Event.event_type,func.count()).filter(Event.timestamp >= datetime.utcnow()-timedelta(hours=1)).group_by('hour',Event.event_type).all()
+        if not summary:
+            return {"summary":"nothing happend last hour",
+                    "data":[]}
+        else:
+            for hour,event_type,count in summary:
+                result.append({'hour':hour,'event_type':event_type,'count':count})
+            return {"summary":"summary of last hour",
+                    "data":result}
+
+
+
     

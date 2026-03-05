@@ -51,6 +51,9 @@ class ShiftSummarizer:
         You are generating a neutral police situational awareness report.
 
         Rules:
+        - just report the facts based on the data provided.
+        - just include information that is supported by the data.
+        - no additional informaton should be added.
         - Do not speculate.
         - Do not infer intent.
         - Do not accuse individuals.
