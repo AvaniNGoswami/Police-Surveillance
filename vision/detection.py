@@ -24,7 +24,11 @@ def send_event(payload):
 model = YOLO("yolov8s.pt")
 # model = YOLO("yolov8n.pt")
 
-video_path = r"C:\Users\Avani N. Goswami\Desktop\Police AI System\police ai system\people.mp4"
+# video_path = r"C:\Users\Avani N. Goswami\Desktop\Police AI System\police ai system\people.mp4"
+video_path = r"C:\Users\Avani N. Goswami\Desktop\Police-Surveillance-clean\Police-Surveillance-clean\people.mp4"
+from pathlib import Path
+
+print("Video exists:", Path(video_path).exists())
 tracker = PersonTracker()
 state_manager = TrackStateManager()
 engine = EventEngine()
@@ -39,8 +43,8 @@ while True:
     tracked_person = tracker.process_frame(frame=frame)
     state = state_manager.update(tracked_people=tracked_person,)
 
-    engine.detect_loiter(state)
-    engine.detect_unattempted(state)
+    engine.detect_loiter(state,frame.shape[1],frame.shape[0])
+    engine.detect_unattempted(state,frame.shape[1],frame.shape[0])
     engine.detect_crowd_surge(state,frame.shape[1],frame.shape[0])
 
 

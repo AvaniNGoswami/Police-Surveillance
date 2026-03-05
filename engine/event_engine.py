@@ -1,6 +1,12 @@
 import time
 import math
 from collections import defaultdict
+from app.models.event import Event
+from sqlalchemy.orm import Session
+from app.db.database import engine
+from uuid import uuid4
+from datetime import datetime
+
 
 class EventEngine:
     def __init__(self,loiter_radius=30,loiter_time=15):
@@ -13,7 +19,16 @@ class EventEngine:
         self.zone_history = defaultdict(list)
         self.surge_flag = {}
 
-    def detect_loiter(self,tracks):
+    def get_zone(self, x, y, frame_width, frame_height):
+        zone_w = frame_width // 3
+        zone_h = frame_height // 3
+
+        zone_x = max(0, min(int(x // zone_w), 2))
+        zone_y = max(0, min(int(y // zone_h), 2))
+
+        return f"{zone_x},{zone_y}"
+
+    def detect_loiter(self,tracks,frame_width, frame_height):
         current_time = time.time()
         for pid,data in tracks.items():
             if data['label']!='person':
@@ -37,9 +52,27 @@ class EventEngine:
                 if pid not in self.loittering_flag:
                     self.loittering_flag[pid]=True
                     print(f"[{time.strftime('%H:%M:%S')}] LOITERING detected person {pid}")
+                    x, y = data['position'][-1]
+                    zone = self.get_zone(x, y, frame_width, frame_height)
+                    time_score = min(1.0, time_diff / (self.loiter_time * 2))
+                    movement_score = 1 - min(1.0, max_dist / self.loiter_radius)
+
+                    confidence = round((0.7 * time_score + 0.3 * movement_score), 2)
+                    with Session(engine) as session:
+                        event = Event(
+                            id = str(uuid4()),
+                            timestamp = datetime.utcnow(),
+                            event_type = 'loittering',
+                            pid = pid,
+                            zone = zone,
+                            confidence = confidence
+                        )
+                        session.add(event)
+                        session.commit()
+                        session.refresh(event)
 
 
-    def detect_unattempted(self,tracked):
+    def detect_unattempted(self,tracked,frame_width, frame_height):
         current_time = time.time()
 
         person = {pid:data for pid,data in tracked.items() if data['label']=='person'}
@@ -70,6 +103,25 @@ class EventEngine:
                     if bid not in self.unattended_flags:
                         self.unattended_flags[bid] = True
                         print(f"[{time.strftime('%H:%M:%S')}] UNATTENDED BAG detected id {bid}")
+                        x, y = data['position'][-1]
+                        zone = self.get_zone(x, y, frame_width, frame_height)
+                        time_score = min(1.0, time_diff / 40)  # 40 sec = full confidence
+                        distance_score = min(1.0, min_dist / 200)
+                        confidence = round((0.6 * time_score + 0.4 * distance_score), 2)
+                        with Session(engine) as session:
+                            event = Event(
+                                id = str(uuid4()),
+                                timestamp = datetime.utcnow(),
+                                event_type = 'unattended object',
+                                pid = near_person,
+                                bid = bid,
+                                zone = zone,
+                                confidence = confidence
+                            )
+                            session.add(event)
+                            session.commit()
+                            session.refresh(event)
+
 
 
     def detect_crowd_surge(self, tracks, frame_width, frame_height):
@@ -86,8 +138,10 @@ class EventEngine:
             if data['label']!='person':
                 continue
             x,y = data['position'][-1]
-            zone_x = min(x // zone_w, 2)
-            zone_y = min(y // zone_h, 2)
+            # zone_x = min(x // zone_w, 2)
+            # zone_y = min(y // zone_h, 2)
+            zone_x = max(0, min(int(x // zone_w), 2))
+            zone_y = max(0, min(int(y // zone_h), 2))
             zone_count[(zone_x,zone_y)]+=1
 
         current_time = time.time()
@@ -107,6 +161,23 @@ class EventEngine:
                     if zone not in self.surge_flag:
                         self.surge_flag[zone] = True
                         print(f"[{time.strftime('%H:%M:%S')}] CROWD SURGE zone {zone}")
+                        growth_ratio = after / max(1, before)
+                        ratio_score = min(1.0, (growth_ratio - 1))  
+                        size_score = min(1.0, after / 10)  
+                        confidence = round((0.6 * ratio_score + 0.4 * size_score), 2)
+                        with Session(engine) as session:
+                            
+                            event = Event(
+                                id=str(uuid4()),
+                                timestamp=datetime.utcnow(),   
+                                event_type='crowd surge',
+                                zone=f"{zone[0]},{zone[1]}",
+                                confidence = confidence
+                            )
+                            
+                            session.add(event)
+                            session.commit()
+                            session.refresh(event)
                     
     
 

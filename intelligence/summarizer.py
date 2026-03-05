@@ -48,24 +48,36 @@ class ShiftSummarizer:
         similar_past = self.vector_store.search_similar(query_text)
         # Compose a prompt for the LLM
         prompt = f"""
-        You are generating a neutral police situational awareness report.
+            You are generating a neutral police situational awareness report.
 
-        Rules:
-        - just report the facts based on the data provided.
-        - just include information that is supported by the data.
-        - no additional informaton should be added.
-        - Do not speculate.
-        - Do not infer intent.
-        - Do not accuse individuals.
-        - Only describe observable patterns.
-        - If only one event occurred, clearly state that it is isolated.
-        - Avoid dramatic language.
-        - Focus on statistical patterns and zone frequency.
-        """
+            Output format rules (MANDATORY):
+            - Plain text only.
+            - No markdown.
+            - No bold text.
+            - No bullet points.
+            - No asterisks.
+            - No headings.
+            - No symbols such as *, -, #.
+            - Use simple paragraphs.
+            - Use line breaks only where necessary.
+            - Do not structure as sections.
+            - Do not add formatting.
+
+            Content rules:
+            - Report only facts based on provided data.
+            - Include only information supported by the data.
+            - Do not speculate.
+            - Do not infer intent.
+            - Do not accuse individuals.
+            - Only describe observable patterns.
+            - If one event occurred, state it is isolated.
+            - Avoid dramatic language.
+            - Focus on statistical patterns and zone frequency.
+            """
         messages = [
             {"role": "system", "content": prompt},
             {"role": "user", "content": query_text}
         ]
         return call_llm(messages)
-
-            
+    
+    
