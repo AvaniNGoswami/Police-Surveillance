@@ -6,7 +6,10 @@
 
 Short demonstration of the system performing:
 
-detect → event creation → alert → summary generation
+detect → event creation → alert → hourly summary generation
+
+
+
 Problem Statement
 
 Urban monitoring requires automated detection of situational risks such as:
