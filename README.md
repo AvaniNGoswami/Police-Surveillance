@@ -1,4 +1,12 @@
 # Police Surveillance Intelligence System
+
+
+## Demo Video
+[▶ https://youtube.com/your-demo-link](https://drive.google.com/file/d/1hjuIEq302YSvRojcGvyoOfd03Lrd60XD/view?usp=drivesdk)
+
+Short demonstration of the system performing:
+
+detect → event creation → alert → summary generation
 Problem Statement
 
 Urban monitoring requires automated detection of situational risks such as:
@@ -99,10 +107,6 @@ Operational decisions remain human-controlled.
 
 ## Safety & False Positive Mitigation
 
-This system includes:
-
-- 1. Temporal Filtering
-
 Events require sustained conditions over time.
 
 - 2. Spatial Constraints
@@ -124,15 +128,20 @@ The LLM:
 This prevents automation bias.
 
 8. Sample Outputs
+   
+  Detection Logs
+<img width="1396" height="370" alt="detection_logs" src="https://github.com/user-attachments/assets/c03835a3-b45b-4d3c-9cef-8a22543c22b5" />
 
-Included:
-- Detection logs
-- Database event records
-- Generated summary reports
-- Alert dashboard screenshots
-- Example summary output:
 
-    - A crowd surge was detected in Zone A at 14:32 with sustained high density over 45 seconds. Similar incidents in the past week occurred during peak entry hours. Recommend monitoring ingress flow and verifying barricade stability.
+
+Event Record Stored in Database
+<img width="1517" height="343" alt="event_record" src="https://github.com/user-attachments/assets/4c0dab45-3f96-4b38-ad5c-9839a07eb4ba" />
+
+
+
+Generated Event Summary
+
+<img width="804" height="822" alt="summary" src="https://github.com/user-attachments/assets/380f9de5-7215-4759-8988-15cd8eae3efb" />
 
 Grounded. Operational. Not conversational.
 
