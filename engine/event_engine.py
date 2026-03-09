@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from app.db.database import engine
 from uuid import uuid4
 from datetime import datetime
+import cv2
+import os
 
 
 class EventEngine:
@@ -19,6 +21,12 @@ class EventEngine:
         self.zone_history = defaultdict(list)
         self.surge_flag = {}
 
+    def save_snapshot(self, frame, event_id):
+        os.makedirs("snapshots", exist_ok=True)
+        path = f"snapshots/{event_id}.jpg"
+        cv2.imwrite(path, frame)
+        return path
+
     def get_zone(self, x, y, frame_width, frame_height):
         zone_w = frame_width // 3
         zone_h = frame_height // 3
@@ -28,7 +36,7 @@ class EventEngine:
 
         return f"{zone_x},{zone_y}"
 
-    def detect_loiter(self,tracks,frame_width, frame_height):
+    def detect_loiter(self,tracks,frame_width, frame_height, frame):
         current_time = time.time()
         for pid,data in tracks.items():
             if data['label']!='person':
@@ -58,21 +66,25 @@ class EventEngine:
                     movement_score = 1 - min(1.0, max_dist / self.loiter_radius)
 
                     confidence = round((0.7 * time_score + 0.3 * movement_score), 2)
+                    event_id = str(uuid4())
+                    image_path = self.save_snapshot(frame, event_id)
+
                     with Session(engine) as session:
                         event = Event(
-                            id = str(uuid4()),
+                            id = event_id,
                             timestamp = datetime.utcnow(),
                             event_type = 'loittering',
                             pid = pid,
                             zone = zone,
-                            confidence = confidence
+                            confidence = confidence,
+                            image_path = image_path
                         )
                         session.add(event)
                         session.commit()
                         session.refresh(event)
 
 
-    def detect_unattempted(self,tracked,frame_width, frame_height):
+    def detect_unattempted(self,tracked,frame_width, frame_height,frame):
         current_time = time.time()
 
         person = {pid:data for pid,data in tracked.items() if data['label']=='person'}
@@ -108,15 +120,18 @@ class EventEngine:
                         time_score = min(1.0, time_diff / 40)  # 40 sec = full confidence
                         distance_score = min(1.0, min_dist / 200)
                         confidence = round((0.6 * time_score + 0.4 * distance_score), 2)
+                        event_id = str(uuid4())
+                        image_path = self.save_snapshot(frame, event_id)
                         with Session(engine) as session:
                             event = Event(
-                                id = str(uuid4()),
+                                id = event_id,
                                 timestamp = datetime.utcnow(),
                                 event_type = 'unattended object',
                                 pid = near_person,
                                 bid = bid,
                                 zone = zone,
-                                confidence = confidence
+                                confidence = confidence,
+                                image_path = image_path
                             )
                             session.add(event)
                             session.commit()
@@ -124,7 +139,7 @@ class EventEngine:
 
 
 
-    def detect_crowd_surge(self, tracks, frame_width, frame_height):
+    def detect_crowd_surge(self, tracks, frame_width, frame_height,frame):
         zone_count = {}
 
         for i in range(3):
@@ -138,8 +153,7 @@ class EventEngine:
             if data['label']!='person':
                 continue
             x,y = data['position'][-1]
-            # zone_x = min(x // zone_w, 2)
-            # zone_y = min(y // zone_h, 2)
+          
             zone_x = max(0, min(int(x // zone_w), 2))
             zone_y = max(0, min(int(y // zone_h), 2))
             zone_count[(zone_x,zone_y)]+=1
@@ -165,14 +179,17 @@ class EventEngine:
                         ratio_score = min(1.0, (growth_ratio - 1))  
                         size_score = min(1.0, after / 10)  
                         confidence = round((0.6 * ratio_score + 0.4 * size_score), 2)
+                        event_id = str(uuid4())
+                        image_path = self.save_snapshot(frame, event_id)
                         with Session(engine) as session:
                             
                             event = Event(
-                                id=str(uuid4()),
+                                id=event_id,
                                 timestamp=datetime.utcnow(),   
                                 event_type='crowd surge',
                                 zone=f"{zone[0]},{zone[1]}",
-                                confidence = confidence
+                                confidence = confidence,
+                                image_path = image_path 
                             )
                             
                             session.add(event)

@@ -1,8 +1,7 @@
 from pathlib import Path
 import sys
 
-# Ensure project root is on sys.path so local packages (e.g. tracking)
-# can be imported when running this file as a script.
+
 project_root = Path(__file__).resolve().parents[1]
 if str(project_root) not in sys.path:
       sys.path.insert(0, str(project_root))
@@ -22,9 +21,7 @@ def send_event(payload):
     )
 
 model = YOLO("yolov8s.pt")
-# model = YOLO("yolov8n.pt")
 
-# video_path = r"C:\Users\Avani N. Goswami\Desktop\Police AI System\police ai system\people.mp4"
 video_path = r"C:\Users\Avani N. Goswami\Desktop\Police-Surveillance-clean\Police-Surveillance-clean\people.mp4"
 from pathlib import Path
 
@@ -43,9 +40,9 @@ while True:
     tracked_person = tracker.process_frame(frame=frame)
     state = state_manager.update(tracked_people=tracked_person,)
 
-    engine.detect_loiter(state,frame.shape[1],frame.shape[0])
-    engine.detect_unattempted(state,frame.shape[1],frame.shape[0])
-    engine.detect_crowd_surge(state,frame.shape[1],frame.shape[0])
+    engine.detect_loiter(state,frame.shape[1],frame.shape[0],frame)
+    engine.detect_unattempted(state,frame.shape[1],frame.shape[0],frame)
+    engine.detect_crowd_surge(state,frame.shape[1],frame.shape[0],frame)
 
 
     for person in tracked_person:

@@ -3,11 +3,9 @@ from sqlalchemy.orm import Session
 from app.db.database import engine
 from app.models.event import Event as events
 
-# LLM integration
 import os
 from groq import Groq
 
-# Ensure GROQ_API_KEY is set in your environment variables
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 if not GROQ_API_KEY:
     raise ValueError("GROQ_API_KEY environment variable not set.")
@@ -25,7 +23,7 @@ def call_llm(messages):
 
 class ShiftSummarizer:
     def __init__(self,vector_store ):
-        # self.db_session = db_session
+
         self.vector_store  = vector_store 
 
     def fetch_last_hr(self,Event):
@@ -46,7 +44,7 @@ class ShiftSummarizer:
             self.vector_store.embed_event(text)
         query_text = " ".join(structured_text)
         similar_past = self.vector_store.search_similar(query_text)
-        # Compose a prompt for the LLM
+    
         prompt = f"""
             You are generating a neutral police situational awareness report.
 
